@@ -2,6 +2,44 @@
 
 Tests para aplicación Python asíncrona de procesamiento de video RTSP con notificaciones Telegram.
 
+## 0. Tests de Validación de Entorno ⭐
+
+**PRIORIDAD CRÍTICA**: Estos tests deben ejecutarse PRIMERO y pasar antes que cualquier otro.
+
+### 0.1. Validación de Variables de Entorno → **tests/test_environment_validation.py**
+- Verificación de existencia de variables obligatorias:
+  - `RTSP_URL`: URL de la cámara RTSP
+  - `BOT_TOKEN`: Token del bot de Telegram
+  - `CHAT_ID`: ID del chat de Telegram para notificaciones
+- Validación de formato básico de cada variable
+- Verificación de que Config puede instanciarse correctamente
+- Garantía de que las variables no están vacías
+
+### 0.2. Validación de Dependencias → **tests/test_dependencies_validation.py**
+- Verificación de dependencias principales:
+  - `python-telegram-bot`: Integración con Telegram
+  - `ffmpeg-python`: Procesamiento de video
+  - `opencv-python`: Visión por computadora
+  - `numpy`: Computación numérica
+  - `pillow`: Procesamiento de imágenes
+  - `pydantic`: Validación de datos
+  - `python-dotenv`: Variables de entorno
+  - `psutil`: Información del sistema
+- Verificación de dependencias de desarrollo:
+  - `pytest`: Framework de testing
+  - `pytest-asyncio`: Testing asíncrono
+- Validación de versión de Python (>=3.11)
+
+**Objetivo**: Establecer una base sólida que garantice que el entorno está correctamente configurado. Una vez que estos tests pasan, el resto de tests pueden asumir que las variables de entorno y dependencias son válidas sin necesidad de validaciones adicionales.
+
+**Beneficios**:
+- ✅ Detección temprana de problemas de configuración y dependencias
+- ✅ Mensajes de error claros y específicos
+- ✅ Evita fallos confusos en tests posteriores
+- ✅ Simplifica el resto de tests al eliminar validaciones repetitivas
+
+---
+
 ## 1. Tests Unitarios
 
 ### 1.1. Infrastructure Layer
@@ -148,6 +186,8 @@ Tests para aplicación Python asíncrona de procesamiento de video RTSP con noti
 tests/
 ├── __init__.py
 ├── conftest.py                    # Fixtures compartidas
+├── test_environment_validation.py # ⭐ Validación de variables de entorno
+├── test_dependencies_validation.py # ⭐ Validación de dependencias
 ├── test_infrastructure.py         # Test general Infrastructure Layer
 ├── test_config.py                 # infrastructure/config.py
 ├── test_events.py                 # infrastructure/events.py
@@ -169,6 +209,10 @@ tests/
 ```
 
 ## Orden de Desarrollo de Tests (según TASK.md)
+
+**Prioridad Crítica (Base del Sistema):**
+0.1. `test_environment_validation.py` - ⭐ **EJECUTAR PRIMERO** - Validación de variables de entorno críticas
+0.2. `test_dependencies_validation.py` - ⭐ **EJECUTAR SEGUNDO** - Validación de dependencias instaladas
 
 **Prioridad Alta (Infrastructure Layer):**
 1. `test_config.py` - Configuración centralizada con Singleton

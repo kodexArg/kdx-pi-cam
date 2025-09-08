@@ -1,5 +1,6 @@
 from typing import Optional, Literal
-from pydantic import BaseSettings, Field, validator
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings
 import os
 from pathlib import Path
 

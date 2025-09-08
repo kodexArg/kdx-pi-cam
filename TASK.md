@@ -4,11 +4,11 @@ Guía paso a paso para construir **kdx-pi-cam** con desarrollo incremental. El a
 
 ## Configuración Inicial del Proyecto
 
-[ ] Actualizar `pyproject.toml` - Configurar dependencias básicas: python-telegram-bot, opencv-python, ffmpeg-python, numpy, pillow, pydantic, python-dotenv, psutil, pytest
+[x] Actualizar `pyproject.toml` - Configurar dependencias básicas: python-telegram-bot, opencv-python, ffmpeg-python, numpy, pillow, pydantic, python-dotenv, psutil, pytest
 
-[ ] Crear archivo `.env` - Copiar desde .env.example y configurar variables críticas: RTSP_URL, BOT_TOKEN, CHAT_ID
+[x] Crear archivo `.env` - Copiar desde .env.example y configurar variables críticas: RTSP_URL, BOT_TOKEN, CHAT_ID
 
-[ ] Ejecutar `uv sync` - Instalar dependencias del proyecto
+[x] Ejecutar `uv sync` - Instalar dependencias del proyecto
 
 ## Desarrollo Incremental (app.py siempre abierto)
 

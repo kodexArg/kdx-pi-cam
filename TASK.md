@@ -1,66 +1,85 @@
 # TASK.md - Construcción de kdx-pi-cam
 
-Guía paso a paso para construir **kdx-pi-cam** siguiendo arquitectura por capas (Layered Architecture).
+Guía paso a paso para construir **kdx-pi-cam** con desarrollo incremental. El archivo `app.py` se mantiene abierto y evoluciona según las necesidades que surjan.
 
-## Infrastructure Layer (Capa de Infraestructura)
+## Configuración Inicial del Proyecto
 
-[ ] Crear `infrastructure/config.py` - Implementar patrón Singleton para configuración centralizada con validación de variables de entorno críticas (RTSP_URL, BOT_TOKEN, CHAT_ID) y opcionales usando pydantic
+[ ] Actualizar `pyproject.toml` - Configurar dependencias básicas: python-telegram-bot, opencv-python, ffmpeg-python, numpy, pillow, pydantic, python-dotenv, psutil, pytest
 
-[ ] Crear `infrastructure/events.py` - Implementar patrón Observer/Publisher-Subscriber para sistema de eventos asíncronos con bus centralizado y logging de eventos
+[ ] Crear archivo `.env` - Copiar desde .env.example y configurar variables críticas: RTSP_URL, BOT_TOKEN, CHAT_ID
 
-[ ] Crear `infrastructure/notifier.py` - Implementar patrón Singleton para sistema de notificaciones centralizado con métodos info, error, warning, debug y clase Log para eventos tipificados
+[ ] Ejecutar `uv sync` - Instalar dependencias del proyecto
 
-## Service Layer (Capa de Servicios)
+## Desarrollo Incremental (app.py siempre abierto)
 
-[ ] Crear `services/telegram_output.py` - Implementar servicio de envío a Telegram con manejo de rate limits, retry logic y gestión de conexión usando python-telegram-bot
+[ ] Crear `infrastructure/config.py` - Implementar configuración centralizada con patrón Singleton y validación de variables de entorno usando pydantic
 
-[ ] Crear `services/telegram_input.py` - Implementar servicio de recepción desde Telegram con manejo de webhooks/polling, procesamiento de comandos y publicación de eventos
+[ ] Crear `app.py` inicial - Entry point básico que importa config, inicializa logging básico y define estructura main() con manejo de shutdown graceful
 
-[ ] Crear `services/file_storage_service.py` - Implementar patrón Strategy para gestión de archivos con interface FileStorageBackend, implementación LocalFileSystemStorage y caché FIFO con rotación automática
+[ ] Probar `app.py` inicial - Ejecutar `uv run python app.py` para verificar configuración básica y imports
 
-[ ] Crear `services/video_stream_service.py` - Implementar servicio integrado de video RTSP con detección de movimiento usando OpenCV, buffer circular y procesamiento unificado de frames
+[ ] Expandir `app.py` - Añadir sistema de eventos asíncronos básico y estructura para inicialización de servicios
 
-## Business Layer (Capa de Negocio)
+[ ] Crear `infrastructure/events.py` - Implementar patrón Observer/Publisher-Subscriber para comunicación asíncrona entre componentes
 
-[ ] Crear `core/models.py` - Definir entidades del dominio usando dataclasses o pydantic: VideoRequest, NotificationEvent, CameraStatus, UserSession, SystemEvent, UserActionEvent, FileMetadata, CacheEntry, StorageEvent, StorageStats
+[ ] Actualizar `app.py` - Integrar sistema de eventos y preparar inicialización de servicios Telegram
 
-[ ] Crear `core/video_manager.py` - Implementar lógica de negocio para gestión de video con procesamiento de solicitudes, aplicación de reglas de negocio (timeouts, límites) y coordinación entre servicios
+[ ] Crear `infrastructure/notifier.py` - Sistema de notificaciones centralizado con métodos info, error, warning, debug y logging estructurado
 
-[ ] Crear `core/notification_manager.py` - Implementar lógica de negocio para notificaciones inteligentes con reglas anti-spam, evaluación de condiciones de usuario y clasificación de tipos de notificación
+[ ] Actualizar `app.py` - Integrar notifier como singleton global y configurar logging avanzado
 
-## Presentation Layer (Capa de Presentación)
+[ ] Crear `services/telegram_output.py` - Servicio básico de envío a Telegram con manejo de conexión y rate limits
 
-[ ] Crear `handlers/telegram_handler.py` - Implementar interfaz de usuario Telegram con manejo de comandos (/start, /clip5, /clip20, /photo), callbacks de botones inline y validación básica de inputs
+[ ] Actualizar `app.py` - Inicializar servicio de output de Telegram y probar envío básico de mensajes
 
-## Entry Point (Punto de Entrada)
+[ ] Crear `services/telegram_input.py` - Servicio de recepción de comandos Telegram con polling/webhooks y publicación de eventos
 
-[ ] Crear `app.py` - Implementar punto de entrada único con patrón Dependency Injection para inicialización de capas en orden correcto, configuración del sistema de eventos y manejo de shutdown graceful
+[ ] Actualizar `app.py` - Integrar servicio de input de Telegram y configurar manejo de comandos básicos
 
-## Configuración del Proyecto
+[ ] Crear `handlers/telegram_handler.py` - Manejador de comandos Telegram (/start, /clip5, /clip20, /photo) con validación básica
 
-[ ] Actualizar `pyproject.toml` - Configurar dependencias del proyecto usando uv con todas las librerías requeridas: python-telegram-bot, opencv-python, ffmpeg-python, numpy, pillow, pydantic, python-dotenv, psutil, pytest
+[ ] Actualizar `app.py` - Conectar handler de Telegram con sistema de eventos y probar comandos básicos
 
-[ ] Crear archivo `.env` - Copiar desde .env.example y configurar variables de entorno críticas y opcionales según REQUIREMENTS.md
+[ ] Crear `core/models.py` - Entidades del dominio: VideoRequest, NotificationEvent, CameraStatus, UserSession, SystemEvent, FileMetadata
 
-## Testing y Validación
+[ ] Crear `services/video_stream_service.py` - Servicio RTSP básico con conexión a cámara y buffer circular simple
 
-[ ] Ejecutar `uv sync` - Instalar todas las dependencias del proyecto
+[ ] Actualizar `app.py` - Inicializar servicio de video y probar conexión RTSP básica
 
-[ ] Ejecutar `uv run python app.py` - Probar inicialización básica de la aplicación y verificar que todas las capas se inicialicen correctamente
+[ ] Expandir `services/video_stream_service.py` - Añadir detección de movimiento con OpenCV y procesamiento unificado de frames
 
-[ ] Validar comunicación entre capas - Verificar que el sistema de eventos funcione correctamente y que las dependencias estén bien inyectadas
+[ ] Crear `core/video_manager.py` - Lógica de negocio para gestión de video con procesamiento de solicitudes y reglas de timeout
+
+[ ] Actualizar `app.py` - Integrar video manager y conectar con handlers de Telegram para comandos de video
+
+[ ] Crear `services/file_storage_service.py` - Sistema de almacenamiento con patrón Strategy, caché FIFO y rotación automática
+
+[ ] Actualizar `app.py` - Integrar servicio de almacenamiento y configurar gestión de archivos temporales
+
+[ ] Crear `core/notification_manager.py` - Lógica de notificaciones inteligentes con reglas anti-spam y evaluación de condiciones
+
+[ ] Actualizar `app.py` final - Integrar notification manager, configurar todos los servicios y optimizar inicialización completa
+
+## Testing y Validación Final
+
+[ ] Probar funcionalidad completa - Ejecutar `uv run python app.py` y verificar todos los comandos Telegram funcionando
+
+[ ] Validar detección de movimiento - Probar notificaciones automáticas y sistema anti-spam
+
+[ ] Verificar gestión de archivos - Comprobar caché FIFO, rotación automática y limpieza de archivos temporales
 
 ---
 
-**Patrones de Diseño Utilizados:**
-- **Layered Architecture**: Separación clara de responsabilidades por capas
-- **Singleton**: Para configuración y notificaciones centralizadas
-- **Observer/Publisher-Subscriber**: Para comunicación asíncrona entre capas
-- **Strategy**: Para intercambio de backends de almacenamiento
-- **Dependency Injection**: Para inyección de dependencias en app.py
+**Metodología de Desarrollo:**
+- **Desarrollo Incremental**: app.py evoluciona continuamente según necesidades
+- **Testing Continuo**: Probar cada integración antes de continuar
+- **Refactoring Progresivo**: Mejorar código existente al añadir nuevas funcionalidades
 
-**Principios de Comunicación:**
-- Presentation → Infrastructure (solo eventos y notifier)
-- Business → Service + Infrastructure
-- Service → Infrastructure
-- Infrastructure → Ninguna dependencia externa
+**Patrones de Diseño:**
+- **Singleton**: Configuración y notificaciones centralizadas
+- **Observer/Publisher-Subscriber**: Comunicación asíncrona entre componentes
+- **Strategy**: Backends intercambiables de almacenamiento
+- **Dependency Injection**: Inyección progresiva en app.py
+
+**Principio Clave:**
+- **app.py como núcleo evolutivo**: Se mantiene abierto durante todo el desarrollo, integrando cada nuevo componente y probando su funcionamiento antes de continuar

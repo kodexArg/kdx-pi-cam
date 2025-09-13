@@ -214,11 +214,12 @@ tests/
 0.1. `test_environment_validation.py` - ⭐ **EJECUTAR PRIMERO** - Validación de variables de entorno críticas
 0.2. `test_dependencies_validation.py` - ⭐ **EJECUTAR SEGUNDO** - Validación de dependencias instaladas
 
-**Prioridad Alta (Infrastructure Layer):**
-1. `test_config.py` - Configuración centralizada con Singleton
-2. `test_events.py` - Sistema de eventos asíncronos
-3. `test_notifier.py` - Sistema de notificaciones centralizado
-4. `test_infrastructure.py` - Integración completa de infrastructure
+**Prioridad Alta (Infrastructure Layer - Implementados):**
+1. `test_config.py` - ⭐ **IMPLEMENTAR AHORA** - Configuración centralizada con Singleton
+2. `test_events.py` - ⭐ **IMPLEMENTAR AHORA** - Sistema de eventos asíncronos
+3. `test_app.py` - ⭐ **IMPLEMENTAR AHORA** - Entry point básico y inicialización con eventos
+4. `test_notifier.py` - Sistema de notificaciones centralizado
+5. `test_infrastructure.py` - Integración completa de infrastructure
 
 **Prioridad Media (Services & Core):**
 5. `test_telegram_output.py` - Servicio básico de envío a Telegram

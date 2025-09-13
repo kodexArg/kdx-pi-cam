@@ -29,6 +29,7 @@ class BotHandler:
         self.motion_detector = MotionDetector()
         self.monitoring_task: Optional[asyncio.Task] = None
         self.monitoring = False
+        self.chat_id: Optional[int] = None
         self.quiet_start = config.notification_quiet_hours_start
         self.quiet_end = config.notification_quiet_hours_end
 
@@ -41,16 +42,36 @@ class BotHandler:
             # Overnight quiet hours
             return now >= self.quiet_start or now < self.quiet_end
 
+    async def _send_error_message(self, message: str) -> None:
+        """Send an error message to the chat."""
+        if self.chat_id and self.application:
+            try:
+                await self.application.bot.send_message(self.chat_id, message)
+            except Exception as e:
+                logger.error(f"Failed to send error message: {e}")
+
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /start command."""
         if self.monitoring:
             await update.message.reply_text("Monitoring is already running.")
             return
 
+        self.chat_id = update.effective_chat.id
+        await update.message.reply_text("Attempting to start monitoring...")
+
         self.monitoring = True
         await self.video_processor.start_capture()
-        self.monitoring_task = asyncio.create_task(self._monitor_motion(update.effective_chat.id))
-        await update.message.reply_text("Monitoring started.")
+
+        # Wait a bit for connection attempt
+        await asyncio.sleep(2)
+
+        if self.video_processor.is_connected:
+            self.monitoring_task = asyncio.create_task(self._monitor_motion(update.effective_chat.id))
+            await update.message.reply_text("Monitoring started successfully.")
+        else:
+            await update.message.reply_text("Failed to connect to video stream. Monitoring started but may not work properly. Check RTSP URL.")
+            # Still start monitoring task in case it connects later
+            self.monitoring_task = asyncio.create_task(self._monitor_motion(update.effective_chat.id))
 
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle /stop command."""
@@ -88,6 +109,33 @@ class BotHandler:
         else:
             await update.message.reply_text("No frames available.")
 
+    async def photo_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle /photo command."""
+        await self.stream_command(update, context)  # Alias for /stream
+
+    async def clip5_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle /clip5 command."""
+        if not self.monitoring:
+            await update.message.reply_text("Monitoring is not running. Use /start first.")
+            return
+
+        await update.message.reply_text("Generating 5-second clip...")
+        clip_path = await self.video_processor.generate_clip(5.0)
+        if clip_path:
+            with open(clip_path, 'rb') as clip_file:
+                await update.message.reply_video(clip_file, caption="5-second clip")
+            import os
+            os.remove(clip_path)
+        else:
+            await update.message.reply_text("Failed to generate clip. No frames available.")
+
+    async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle /status command."""
+        status = f"Monitoring: {'Running' if self.monitoring else 'Stopped'}\n"
+        status += f"RTSP Connected: {'Yes' if self.video_processor.is_connected else 'No'}\n"
+        status += f"Frames in buffer: {len(self.video_processor.frame_buffer)}"
+        await update.message.reply_text(status)
+
     async def _monitor_motion(self, chat_id: int) -> None:
         """Monitor for motion and send notifications."""
         while self.monitoring:
@@ -119,6 +167,12 @@ class BotHandler:
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("stop", self.stop_command))
         self.application.add_handler(CommandHandler("stream", self.stream_command))
+        self.application.add_handler(CommandHandler("photo", self.photo_command))
+        self.application.add_handler(CommandHandler("clip5", self.clip5_command))
+        self.application.add_handler(CommandHandler("status", self.status_command))
+
+        # Set error callback now that application is available
+        self.video_processor.error_callback = self._send_error_message
 
         return self.application
 
@@ -126,4 +180,4 @@ class BotHandler:
         """Run the bot."""
         if not self.application:
             self.setup_application()
-        await self.application.run_polling()
+        await self.application.run_polling(close_loop=False)

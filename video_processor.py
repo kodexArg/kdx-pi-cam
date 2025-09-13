@@ -24,11 +24,12 @@ logger = logging.getLogger(__name__)
 class VideoProcessor:
     """Handles RTSP stream capture and video processing."""
 
-    def __init__(self, rtsp_url: str):
+    def __init__(self, rtsp_url: str, error_callback: Optional[callable] = None):
         """Initialize the video processor.
 
         Args:
             rtsp_url: The RTSP stream URL.
+            error_callback: Optional callback for error notifications.
         """
         config = get_config()
         self.rtsp_url = rtsp_url
@@ -39,6 +40,8 @@ class VideoProcessor:
         self.cap: Optional[cv2.VideoCapture] = None
         self.running = False
         self.task: Optional[asyncio.Task] = None
+        self.error_callback = error_callback
+        self.consecutive_failures = 0
 
     async def start_capture(self) -> None:
         """Start capturing frames from the RTSP stream."""
@@ -46,6 +49,11 @@ class VideoProcessor:
             return
         self.running = True
         self.task = asyncio.create_task(self._capture_loop())
+
+    @property
+    def is_connected(self) -> bool:
+        """Check if RTSP stream is currently connected."""
+        return self.cap is not None and self.cap.isOpened()
 
     async def stop_capture(self) -> None:
         """Stop capturing frames."""
@@ -67,8 +75,14 @@ class VideoProcessor:
                     self.cap = cv2.VideoCapture(self.rtsp_url)
                     if not self.cap.isOpened():
                         logger.error("Failed to open RTSP stream")
+                        self.consecutive_failures += 1
+                        if self.consecutive_failures >= 3 and self.error_callback:
+                            await self.error_callback("Warning: Unable to connect to RTSP stream. Monitoring may not work properly.")
+                            self.consecutive_failures = 0  # Reset to avoid spam
                         await asyncio.sleep(5)  # Retry after 5 seconds
                         continue
+                else:
+                    self.consecutive_failures = 0  # Reset on success
 
                 ret, frame = await asyncio.get_event_loop().run_in_executor(None, self.cap.read)
                 if ret:

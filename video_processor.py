@@ -43,9 +43,19 @@ class VideoProcessor:
         self.error_callback = error_callback
         self.consecutive_failures = 0
 
+    def _mask_url(self, url: str) -> str:
+        """Mask credentials in RTSP URL for logging."""
+        import re
+        return re.sub(r'://([^:]+):([^@]+)@', r'://***:***@', url)
+
     async def start_capture(self) -> None:
         """Start capturing frames from the RTSP stream."""
         if self.running:
+            return
+        self.cap = cv2.VideoCapture(self.rtsp_url)
+        if not self.cap.isOpened():
+            logger.error(f"Failed to open RTSP stream: {self._mask_url(self.rtsp_url)}. OpenCV error code: {self.cap.get(cv2.CAP_PROP_POS_FRAMES) if self.cap else 'N/A'}")
+            self.cap = None
             return
         self.running = True
         self.task = asyncio.create_task(self._capture_loop())
@@ -74,13 +84,15 @@ class VideoProcessor:
                 if not self.cap or not self.cap.isOpened():
                     self.cap = cv2.VideoCapture(self.rtsp_url)
                     if not self.cap.isOpened():
-                        logger.error("Failed to open RTSP stream")
+                        logger.error(f"Failed to open RTSP stream: {self._mask_url(self.rtsp_url)}. OpenCV error code: {self.cap.get(cv2.CAP_PROP_POS_FRAMES) if self.cap else 'N/A'}")
                         self.consecutive_failures += 1
                         if self.consecutive_failures >= 3 and self.error_callback:
                             await self.error_callback("Warning: Unable to connect to RTSP stream. Monitoring may not work properly.")
                             self.consecutive_failures = 0  # Reset to avoid spam
                         await asyncio.sleep(5)  # Retry after 5 seconds
                         continue
+                    else:
+                        logger.info(f"Successfully opened RTSP stream: {self._mask_url(self.rtsp_url)}")
                 else:
                     self.consecutive_failures = 0  # Reset on success
 
@@ -90,7 +102,7 @@ class VideoProcessor:
                     if len(self.frame_buffer) > self.buffer_size:
                         self.frame_buffer.pop(0)
                 else:
-                    logger.warning("Failed to read frame")
+                    logger.warning(f"Failed to read frame from RTSP stream: {self._mask_url(self.rtsp_url)}. Frame buffer size: {len(self.frame_buffer)}")
                     await asyncio.sleep(1)
 
                 # Throttle to ~10 FPS
@@ -103,7 +115,7 @@ class VideoProcessor:
                     await asyncio.sleep(0.5)  # Slow down
 
             except Exception as e:
-                logger.error(f"Error in capture loop: {e}")
+                logger.error(f"Error in capture loop: {e}. RTSP URL: {self._mask_url(self.rtsp_url)}")
                 await asyncio.sleep(5)
 
     def get_recent_frames(self, count: int) -> List[np.ndarray]:

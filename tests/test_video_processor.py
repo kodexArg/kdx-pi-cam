@@ -61,7 +61,7 @@ async def test_get_recent_frames():
     assert recent == frames[-3:]
 
 
-@patch('cv2.VideoCapture')
+@patch('video_processor.cv2.VideoCapture')
 @pytest.mark.asyncio
 async def test_start_capture(mock_cap):
     """Test start_capture."""

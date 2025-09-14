@@ -66,9 +66,13 @@ async def test_start_command():
         update.effective_chat.id = 123
         update.message = AsyncMock()
 
-        await handler.start_command(update, None)
-        assert handler.monitoring
-        update.message.reply_text.assert_called_with("Monitoring started.")
+        # Mock VideoCapture to simulate successful connection
+        mock_cap_instance = MagicMock()
+        mock_cap_instance.isOpened.return_value = True
+        with patch('video_processor.cv2.VideoCapture', return_value=mock_cap_instance):
+            await handler.start_command(update, None)
+            assert handler.monitoring
+            update.message.reply_text.assert_called_with("Monitoring started successfully.")
 
 
 @pytest.mark.asyncio

@@ -6,7 +6,7 @@ This module handles loading and validating environment variables using Pydantic.
 import os
 from typing import Optional
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic_settings import BaseSettings
 
 
@@ -55,9 +55,7 @@ class AppConfig(BaseSettings):
     log_max_file_size_mb: int = Field(..., description="Maximum log file size in MB")
     log_backup_count: int = Field(..., description="Number of log backup files to keep")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = ConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
 # Global config instance
@@ -92,3 +90,9 @@ def load_config() -> AppConfig:
         ConfigError: If required variables are missing or invalid.
     """
     return get_config()
+
+
+def reset_config() -> None:
+    """Reset the global configuration instance. For testing purposes."""
+    global _config
+    _config = None

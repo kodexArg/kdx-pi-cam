@@ -1,9 +1,10 @@
 """Tests for config module."""
 
+import os
 import pytest
 from pydantic import ValidationError
 
-from config import AppConfig, ConfigError, get_config, load_config
+from config import AppConfig, ConfigError, get_config, load_config, reset_config
 
 
 def test_app_config_valid():
@@ -61,7 +62,7 @@ def test_app_config_valid():
 def test_app_config_invalid():
     """Test invalid AppConfig raises ValidationError."""
     with pytest.raises(ValidationError):
-        AppConfig(rtsp_url="", bot_token="", chat_id="")
+        AppConfig(rtsp_url=None, bot_token=None, chat_id=None)
 
 
 def test_load_config_missing_env(monkeypatch):
@@ -77,8 +78,21 @@ def test_load_config_missing_env(monkeypatch):
     for var in env_vars:
         monkeypatch.delenv(var, raising=False)
 
-    with pytest.raises(ConfigError):
-        load_config()
+    # Temporarily move .env file
+    import os
+    import shutil
+    env_file = '.env'
+    backup_file = '.env.backup'
+    if os.path.exists(env_file):
+        shutil.move(env_file, backup_file)
+
+    reset_config()
+    try:
+        with pytest.raises(ConfigError):
+            load_config()
+    finally:
+        if os.path.exists(backup_file):
+            shutil.move(backup_file, env_file)
 
 
 def test_get_config_singleton(monkeypatch):
